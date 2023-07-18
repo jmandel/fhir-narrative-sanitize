@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>HTML Sanitizer</title>
+    <script type="module">
+        import DOMPurify from 'https://esm.sh/dompurify';
+
+        const ALLOWED_TAGS = ['head', 'title', 'meta', 'body', 'div', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+            'address', 'em', 'strong', 'dfn', 'code', 'samp', 'kbd', 'var', 'cite', 'abbr', 'acronym',
+            'blockquote', 'q', 'sub', 'sup', 'p', 'br', 'pre', 'ul', 'ol', 'li', 'dl', 'dt', 'dd', 'dir',
+            'menu', 'table', 'caption', 'thead', 'tfoot', 'tbody', 'colgroup', 'col', 'tr', 'th', 'td', 'img'];
+        const ALLOWED_URI_REGEXP = /^(?:data:)/i; // This will only allow 'data:...' URIs
+        const config = {
+            ALLOWED_TAGS: ALLOWED_TAGS,
+            ALLOWED_URI_REGEXP: ALLOWED_URI_REGEXP,
+            FORBID_ATTR: ['style'],
+        };
+        const STYLE_DEFAULT = `<style>.bold { font-weight: bold }
+            .italics { font-style: italic }
+            .underline { text-decoration: underline }
+            .strikethrough { text-decoration: line-through }
+            .left { text-align : left }
+            .right { text-align : right }
+            .center { text-align : center }
+            .justify { text-align : justify }
+            .border-left { border-left: 1px solid grey}
+            .border-right { border-right: 1px solid grey }
+            .border-top { border-top: 1px solid grey }
+            .border-bottom { border-bottom: 1px solid grey }
+            .arabic { list-style-type: decimal }
+            .little-roman { list-style-type: lower-roman }
+            .big-roman { list-style-type: upper-roman }
+            .little-alpha { list-style-type: lower-alpha }
+            .big-alpha { list-style-type: upper-alpha }
+            .disc { list-style-type: disc }
+            .circle { list-style-type : circle }
+            .square { list-style-type: square }
+            .nolist { list-style-type: none }</style>`;
+
+
+        window.onload = async function () {
+            const sanitizeBtn = document.getElementById('sanitizeBtn');
+            const inputTextarea = document.getElementById('inputTextarea');
+            inputTextarea.style = "width: 100%; height: 500px";
+            const defaultResource = await fetch('https://hl7.org/fhir/basic-example-narrative.json').then(r => r.json());
+
+            sanitizeBtn.addEventListener('click', function () {
+                let outputIframe = document.getElementById('outputIframe');
+                if (outputIframe) {
+                    outputIframe.remove();
+                }
+
+                outputIframe = document.createElement('iframe');
+                outputIframe.setAttribute('id', 'outputIframe');
+                outputIframe.setAttribute('sandbox', '');
+                outputIframe.style = "width: 100%; height: 500px";
+                document.body.appendChild(outputIframe);
+
+                const dirtyHTML = inputTextarea.value;
+                const cleanHTML = DOMPurify.sanitize(dirtyHTML, config);
+                const completeHTML = STYLE_DEFAULT + cleanHTML;
+                outputIframe.src = 'data:text/html;charset=utf-8,' + encodeURI(completeHTML);
+            });
+
+            inputTextarea.value = defaultResource.text.div;
+            sanitizeBtn.click();
+        };
+    </script>
+</head>
+
+<body>
+    <h1>HTML Sanitizer</h1>
+    <textarea id="inputTextarea" rows="10" cols="50"></textarea><br>
+    <button id="sanitizeBtn">Sanitize</button>
+    <h2>Sanitized Output:</h2>
+</body>
+
+</html>
